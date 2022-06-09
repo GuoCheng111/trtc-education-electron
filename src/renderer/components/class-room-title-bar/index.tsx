@@ -40,15 +40,6 @@ function ClassTitle(props: Record<string, any>) {
           <Time classStartTime={classStartTime} />
         </span>
       </div>
-      <div className="class-chat-group">
-        <span>
-          {a18n('QQ 交流群：')} {chatNumber}
-          <CopyNumber number={chatNumber} chatNumber={chatNumber} />
-        </span>
-        <span>
-          <GithubLink />
-        </span>
-      </div>
     </div>
   );
 }

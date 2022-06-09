@@ -79,8 +79,6 @@ export default function SimpleTabs(props: Record<string, any>) {
           onChange={handleChange}
           aria-label="simple tabs example"
         >
-          <Tab label={a18n('视频列表')} />
-          <Tab label={a18n('聊天互动')} />
           <Tab label={a18n('成员列表')} />
         </Tabs>
       </AppBar>

@@ -128,20 +128,6 @@ function TeacherClassRoomToolBar(props: TTeacherClassRoomToolBarProps) {
   return (
     <div className="trtc-edu-teacher-class-room-tool-bar">
       <Footer>
-        <HandUpController
-          mode="big"
-          name={a18n('举手列表')}
-          handsUpList={handsUpList}
-          onClick={handsUpHandler}
-          onPopClose={onHandsUpPopClose}
-        />
-        <RollCallController
-          mode="big"
-          onCallAllStudent={onCallAllStudent}
-          isRolled={isRolled}
-        />
-        <RoasterController mode="big" />
-        <div className="trtc-edu-vertical-line" />
         <CameraController
           mode="big"
           isStarted={isCameraStarted}
@@ -168,8 +154,6 @@ function TeacherClassRoomToolBar(props: TTeacherClassRoomToolBarProps) {
           onMuteAllStudent={onMuteAllStudent}
           isMute={isAllStudentMuted}
         />
-        <RecordController mode="big" />
-        <SettingController mode="big" onClick={toggleSettingModal} />
         <div className="trtc-edu-vertical-line" />
         <ExitController mode="big" role={role} onExit={onLeaveRoom as any} />
         <ConfirmDialog
