@@ -1,12 +1,16 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import { createMainWindow } from './windows/window-main';
 import store from './store';
 
 let mainWindow: BrowserWindow | null = null;
 
 async function initApp() {
+  if (process.env.NODE_ENV === 'production') {
+    Menu.setApplicationMenu(null);
+  }
+
   const newWindow = await createMainWindow({ ...store });
   mainWindow = newWindow.getBrowserWindow();
 

@@ -31,7 +31,7 @@
     ]
   },
   "build": {
-    "productName": "TRTCElectronEducation",
+    "productName": "InteractiveEdu",
     "appId": "com.tencent.cloud.trtc-education-electron",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
