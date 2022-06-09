@@ -147,14 +147,6 @@ function Home() {
           />
         </div>
         <div className="form-item">
-          <div className="form-item-label">{a18n('课堂类型')}</div>
-          <FormControl variant="outlined">
-            <Select value={classType} onChange={handleClassTypeChange as any}>
-              <MenuItem value="education">{a18n('互动课堂')}</MenuItem>
-            </Select>
-          </FormControl>
-        </div>
-        <div className="form-item">
           <Button
             variant="contained"
             className="create-class-btn"
@@ -162,19 +154,9 @@ function Home() {
           >
             {a18n('创建课堂')}
           </Button>
-          <Button
-            variant="contained"
-            className="enter-class-btn"
-            onClick={enterClass}
-          >
-            {a18n('进入课堂')}
-          </Button>
         </div>
       </form>
       <div className="home-empty" />
-      <div className="home-qq-number">
-        {a18n('如有任何问题可以联系我们，QQ 群号：695855795')}
-      </div>
     </div>
   );
 }
