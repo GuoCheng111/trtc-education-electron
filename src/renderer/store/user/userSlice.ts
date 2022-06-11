@@ -7,6 +7,7 @@ export const userSlice = createSlice({
   name: 'user',
   initialState: {
     roomID: '',
+    password:'',
     userID: '',
     role: 'teacher',
     isCameraStarted: true,
@@ -35,6 +36,7 @@ export const userSlice = createSlice({
       if (action.payload) {
         /* eslint-disable */
         state.roomID = action.payload.roomID !== undefined ? action.payload.roomID : state.roomID;
+        state.password = action.payload.password !== undefined ? action.payload.password : state.password;
         state.userID = action.payload.userID !== undefined ? action.payload.userID : state.userID;
         state.role = action.payload.role !== undefined ? action.payload.role : state.role;
         state.isCameraStarted = action.payload.isCameraStarted !== undefined ? action.payload.isCameraStarted : state.isCameraStarted;
@@ -81,6 +83,11 @@ export const userSlice = createSlice({
     updateRoomID: (state, action) => {
       if (action.payload !== undefined) {
         state.roomID = action.payload;
+      }
+    },
+    updatePassword: (state, action) => {
+      if (action.payload !== undefined) {
+        state.password = action.payload;
       }
     },
     updateClassType: (state, action) => {
@@ -152,6 +159,7 @@ export const {
   updateUserID,
   updateRole,
   updateRoomID,
+  updatePassword,
   updateClassType,
   updateDeviceState,
   updateCurrentDevice,
