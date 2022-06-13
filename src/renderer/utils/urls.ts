@@ -52,6 +52,9 @@ export const courseDetailUrl = sitechIp + '/commonInterface/getProgramInfo';
 //播放页面课程章节列表
 export const courseChapterListUrl = sitechIp + '/commonInterface/getProgramListInfo';
 
+//设置直播课程状态
+export const setLiveStateUrl = sitechIp + '/permissions/setLiveState';
+
 //播放页面章节播放地址
 export const courseChapterPlayUrl = sitechIp + '/permissions/getProgramEpisodes';
 

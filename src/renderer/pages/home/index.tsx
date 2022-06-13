@@ -21,7 +21,7 @@ import {
 import { EUserEventNames } from '../../../constants';
 import logger from '../../utils/logger';
 import homeUtil from './util';
-import { qualityCourseUrl, loginUrl, AxiosPost ,AxiosGet} from '../../utils/urls';
+import { qualityCourseUrl, loginUrl, setLiveStateUrl, AxiosPost ,AxiosGet} from '../../utils/urls';
 import md5 from '../../utils/md5';
 import './index.scss';
 
@@ -66,11 +66,32 @@ function Home() {
   );
   const dispatch = useDispatch();
 
-  // useEffect(() => {
-  //   if (!roomID) {
-  //     dispatch(updateRoomID(Math.floor(Math.random() * 10000000).toString()));
-  //   }
-  // }, [dispatch, roomID]);
+  useEffect(async () => {
+    if (!roomID) {
+      //dispatch(updateRoomID(Math.floor(Math.random() * 10000000).toString()));
+    }else{
+      logger.debug('useEffect roomID : ', roomID);
+      //更新课程状态 
+      try {
+        let data = new FormData();
+        data.append('organizeId', 1);
+        data.append('siteId', 2);
+        data.append('programId', roomID);
+        data.append('programType', 3);
+        //状态 0,未开始，1开始，2结束
+        data.append('state',1);
+
+        await AxiosPost(setLiveStateUrl, data);
+      } catch (error) {
+        logger.error('setLiveStateUrl error :', error);
+        Toast.error("更新房间状态错误");
+        return;
+      }
+      //end
+
+      createClass();
+    }
+  }, [dispatch, roomID]);
 
   function handleRoomIDChange(event: React.ChangeEvent<HTMLInputElement>) {
     const newRoomID = +event.target.value;
@@ -221,11 +242,12 @@ function Home() {
     logger.log(`${logPrefix}enterClass response from Main:`, response);
   }
 
-  function enterClass2 (id){
+   function enterClass2 (id){
  
     dispatch(updateRoomID(id));
     logger.debug('createClass ! roomID : ' , roomID);
-    createClass();
+
+
   }
 
   if(isLogin){

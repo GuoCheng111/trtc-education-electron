@@ -1,5 +1,6 @@
 import a18n from 'a18n';
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { TRTCDeviceInfo } from 'trtc-electron-sdk/liteav/trtc_define';
 import logger from '../../../../../utils/logger';
 import { EUserEventNames } from '../../../../../../constants';
@@ -17,9 +18,14 @@ import RollCallController from '../../../../../components/toolbar-icon-buttons/r
 import ExitController from '../../../../../components/toolbar-icon-buttons/exit-controller';
 import ConfirmDialog from '../../../../../components/confirm-dialog';
 import { tuiRoomCore } from '../../../../../core/room-core';
+import {setLiveStateUrl,AxiosPost } from '../../../../../utils/urls'
+import Toast from '../../../../../components/toast';
 import './index.scss';
+import { updateRoomID } from 'renderer/store/user/userSlice';
+
 
 interface TTeacherClassRoomToolBarProps {
+  roomID: number;
   role: string;
   onChangeSharing: () => void;
   isCameraStarted: boolean;
@@ -47,6 +53,7 @@ function TeacherClassRoomToolBar(props: TTeacherClassRoomToolBarProps) {
   const logPrefix = '[TeacherClassRoomToolBar]';
   logger.log(`${logPrefix}.props:`, props);
   const {
+    roomID,
     role,
     onChangeSharing,
     isCameraStarted,
@@ -74,6 +81,8 @@ function TeacherClassRoomToolBar(props: TTeacherClassRoomToolBarProps) {
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
   const [isWindowClosureConfirm, setIsWindowClosureConfirm] = useState(false);
 
+  const dispatch = useDispatch();
+
   // 离开教室前的dialog
   const onCancelWindowClosure = () => {
     setIsClosureDialogVisible(false);
@@ -91,6 +100,23 @@ function TeacherClassRoomToolBar(props: TTeacherClassRoomToolBarProps) {
         error
       );
     }
+
+    //更新课程状态 
+    try {
+      let data = new FormData();
+      data.append('organizeId', 1);
+      data.append('siteId', 2);
+      data.append('programId', roomID);
+      data.append('programType', 3);
+      //状态 0,未开始，1开始，2结束
+      data.append('state',2);
+      await AxiosPost(setLiveStateUrl, data);
+      } catch (error) {
+        logger.error('setLiveStateUrl error :', error);
+        Toast.error("更新房间状态错误");
+    }
+    //end
+    dispatch(updateRoomID(0));
 
     (window as any).electron.ipcRenderer.send(
       EUserEventNames.ON_TEACHER_EXIT_CLASS_ROOM,

@@ -171,6 +171,7 @@ class MainWindow extends BaseWindow {
       `${MainWindow.preLog}.exitClassRoomListener() args:`,
       args
     );
+    //this.browserWindow?.close();
     this.browserWindow?.show();
 
     this.teacherClassRoomWindow?.close();
