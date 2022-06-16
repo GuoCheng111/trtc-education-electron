@@ -67,6 +67,8 @@
   "您的名称": "Name",
   "课堂ID": "ID",
   "课堂类型": "Type",
+  "课堂名称":"ClassName",
+  "上课时间":"ClassTimer",
   "互动课堂": "Interactive classroom",
   "创建课堂": "create class",
   "登录": "login",

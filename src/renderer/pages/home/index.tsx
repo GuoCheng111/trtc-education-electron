@@ -1,7 +1,7 @@
 import a18n from 'a18n';
 import React, { useState, useEffect, Component } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import axios                        from 'axios';
+import axios from 'axios';
 
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
@@ -10,6 +10,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
 import packageConfig from '../../../../package.json';
 import buildPackageConfig from '../../../../build/app/package.json';
+import ConfirmDialog from '../../components/confirm-dialog';
 import Toast from '../../components/toast';
 import {
   updateUserID,
@@ -21,25 +22,35 @@ import {
 import { EUserEventNames } from '../../../constants';
 import logger from '../../utils/logger';
 import homeUtil from './util';
-import { qualityCourseUrl, loginUrl, setLiveStateUrl, AxiosPost ,AxiosGet} from '../../utils/urls';
+import {
+  qualityCourseUrl,
+  loginUrl,
+  setLiveStateUrl,
+  AxiosPost,
+  AxiosGet,
+} from '../../utils/urls';
 import md5 from '../../utils/md5';
 import './index.scss';
 
-function CourseItem (props) {
-  const {image ,name, organizeName, roomId, onPress } =  props;
+function CourseItem(props) {
+  const { image, name, organizeName, roomId, onPress } = props;
   return (
-    <div onClick={()=>{onPress(roomId)}}>
-      <ul style={{'flex-direction': 'row'}}>
-        <img src = {image} width='50' height='50'></img>
+    <div
+      onClick={() => {
+        onPress(roomId);
+      }}
+    >
+      <ul style={{ 'flex-direction': 'row' }}>
+        <img src={image} width="50" height="50" />
 
-        <div style={{'flex-direction': 'column'}}>
+        <div style={{ 'flex-direction': 'column' }}>
           <li>课程名称 : {name}</li>
           <li>开课机构 : {organizeName}</li>
-          </div>
+        </div>
       </ul>
       <hr />
     </div>
-  )
+  );
 }
 
 function Home() {
@@ -50,17 +61,20 @@ function Home() {
   const userID = useSelector((state: any) => state.user.userID);
   const roomID = useSelector((state: any) => state.user.roomID);
   const password = useSelector((state: any) => state.user.password);
-  //const isLogin =  useSelector((state: any) => state.user.isLogin);
+  // const isLogin =  useSelector((state: any) => state.user.isLogin);
   const classType = useSelector((state: any) => state.user.classType);
   const platform = useSelector((state: any) => state.user.platform);
   const [oldUserID, setOldUserID] = useState<string>('');
   const [isLogin, setLogin] = useState(false);
   const [courseList, setCourseList] = useState(null);
+  const [isClosureDialogVisible, setIsClosureDialogVisible] = useState(false);
+  const [className, setClassName] = useState<string>('');
+  const [classStartTimer, setclassStartTimer] = useState<string>('');
 
-  let pageSize = 10;
-  let currentPage = 1;
+  const pageSize = 10;
+  const currentPage = 1;
   let totalPage = 1;
-  
+
   logger.log(
     `${logPrefix} platform: ${platform}, userID:${userID} roomID:${roomID} classType:${classType}`
   );
@@ -68,26 +82,26 @@ function Home() {
 
   useEffect(async () => {
     if (!roomID) {
-      //dispatch(updateRoomID(Math.floor(Math.random() * 10000000).toString()));
-    }else{
+      // dispatch(updateRoomID(Math.floor(Math.random() * 10000000).toString()));
+    } else {
       logger.debug('useEffect roomID : ', roomID);
-      //更新课程状态 
+      // 更新课程状态
       try {
-        let data = new FormData();
+        const data = new FormData();
         data.append('organizeId', 1);
         data.append('siteId', 2);
         data.append('programId', roomID);
         data.append('programType', 3);
-        //状态 0,未开始，1开始，2结束
-        data.append('state',1);
+        // 状态 0,未开始，1开始，2结束
+        data.append('state', 1);
 
         await AxiosPost(setLiveStateUrl, data);
       } catch (error) {
         logger.error('setLiveStateUrl error :', error);
-        Toast.error("更新房间状态错误");
+        Toast.error('更新房间状态错误');
         return;
       }
-      //end
+      // end
 
       createClass();
     }
@@ -119,6 +133,18 @@ function Home() {
     dispatch(updateClassType(event.target.value as string));
   }
 
+  function handleClassNameChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const className = event.target.value as string;
+    setClassName(className);
+  }
+
+  function handleClassStartTimerChange(
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) {
+    const startTimer = event.target.value as string;
+    setclassStartTimer(startTimer);
+  }
+
   async function isRoomExisted() {
     try {
       if (oldUserID !== userID) {
@@ -138,29 +164,28 @@ function Home() {
     }
   }
 
-  async function login(){
+  async function login() {
     logger.debug('login');
 
     try {
-      let data = new FormData();
-      data.append('username', userID) ;
-      data.append('password', md5.hex_md5(password+'')) ;
+      const data = new FormData();
+      data.append('username', userID);
+      data.append('password', md5.hex_md5(`${password}`));
 
-      let res = await AxiosPost(loginUrl, data);
-      if(res.data.state == 0){
-        //dispatch(updateLoginStatus(true));
+      const res = await AxiosPost(loginUrl, data);
+      if (res.data.state == 0) {
+        // dispatch(updateLoginStatus(true));
         setLogin(true);
         updateCourseList();
-        Toast.info("登录成功");
-      }else
-       throw new Error(res.data.message);
+        Toast.info('登录成功');
+      } else throw new Error(res.data.message);
     } catch (error) {
       logger.error('login error :', error);
-      Toast.error("登录错误");
+      Toast.error('登录错误');
     }
   }
 
-  async function updateCourseList(){
+  async function updateCourseList() {
     try {
       let data = {
         organizeId: 1,
@@ -169,25 +194,29 @@ function Home() {
         deviceType: null,
         deviceId: null,
         pageNo: currentPage,
-        pageSize: pageSize,
-        columnCode: 'c02lm0zxzb'
+        pageSize,
+        columnCode: 'c02lm0zxzb',
       };
-    
+
       data = {
         params: {
-          ...data
-        }
+          ...data,
+        },
       };
-      
-      let res = await AxiosGet(qualityCourseUrl, data);
-      let {
-        data: { pages, list = [] }
+
+      const res = await AxiosGet(qualityCourseUrl, data);
+      const {
+        data: { pages, list = [] },
       } = res;
       totalPage = pages;
       setCourseList(list);
     } catch (error) {
       logger.debug('updateCourseList error : ', error);
     }
+  }
+
+  async function createClass2() {
+    setIsClosureDialogVisible(true);
   }
 
   async function createClass() {
@@ -242,62 +271,131 @@ function Home() {
     logger.log(`${logPrefix}enterClass response from Main:`, response);
   }
 
-   function enterClass2 (id){
- 
+  function enterClass2(id) {
     dispatch(updateRoomID(id));
-    logger.debug('createClass ! roomID : ' , roomID);
-
-
+    logger.debug('createClass ! roomID : ', roomID);
   }
 
-  if(isLogin){
-    return(
-      <div className="trtc-edu-home">
+  function onCancelWindowClosure() {
+    setIsClosureDialogVisible(false);
+  }
 
-      <div className="trtc-edu-home-course">
-        {
-          courseList?  courseList.map((item,index)=>{
-              let image = item.hlogo ?  item.hlogo  : '';
-              let name = item.liveName;
-              let organizeName = item.performer.organize.organizeName;
-              let roomId = item.id;
-              return <CourseItem image = {image}  name = {name} organizeName = {organizeName} roomId = {roomId} onPress = {enterClass2}></CourseItem>
-            }):null
-        }
-      </div>
+  function onConfirmWindowClosure() {
+    setIsClosureDialogVisible(false);
+  }
 
-      </div>
-    ) 
-  }else{
+  if (isLogin) {
     return (
       <div className="trtc-edu-home">
-        <form className="trtc-edu-home-form" noValidate autoComplete="off">
-          <div className="form-item">
-            <div className="form-item-label">{a18n('您的名称')}</div>
-            <TextField
-              variant="outlined"
-              value={userID}
-              onChange={handleUserIDChange}
-            />
-          </div>
-          <div className="form-item">
-            <div className="form-item-label">{a18n('用户密码')}</div>
-            <TextField
-              variant="outlined"
-              inputProps={{ inputMode: 'numeric' }}
-              onChange={handlePasswordChange}
-            />
-          </div>
-          <div className="form-item">
+        <div className="trtc-edu-home-course">
+          <div
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Button
               variant="contained"
               className="create-class-btn"
-              onClick={login}
+              onClick={createClass2}
             >
-              {a18n('登录')}
+              {a18n('创建课堂')}
             </Button>
           </div>
-          {/*
+
+          {courseList
+            ? courseList.map((item, index) => {
+                const image = item.hlogo ? item.hlogo : '';
+                const name = item.liveName;
+                const { organizeName } = item.performer.organize;
+                const roomId = item.id;
+                return (
+                  <CourseItem
+                    image={image}
+                    name={name}
+                    organizeName={organizeName}
+                    roomId={roomId}
+                    onPress={enterClass2}
+                  />
+                );
+              })
+            : null}
+        </div>
+
+        <ConfirmDialog
+          show={isClosureDialogVisible}
+          onCancel={onCancelWindowClosure}
+          onConfirm={onConfirmWindowClosure}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyItems: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <div className="form-item-label">{a18n('课堂名称')}</div>
+              <TextField
+                size="small"
+                variant="outlined"
+                value={className}
+                onChange={handleClassNameChange}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyItems: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <div className="form-item-label">{a18n('上课时间')}</div>
+              <TextField
+                size="small"
+                variant="outlined"
+                value={classStartTimer}
+                onChange={handleClassStartTimerChange}
+              />
+            </div>
+          </div>
+        </ConfirmDialog>
+      </div>
+    );
+  }
+  return (
+    <div className="trtc-edu-home">
+      <form className="trtc-edu-home-form" noValidate autoComplete="off">
+        <div className="form-item">
+          <div className="form-item-label">{a18n('您的名称')}</div>
+          <TextField
+            variant="outlined"
+            value={userID}
+            onChange={handleUserIDChange}
+          />
+        </div>
+        <div className="form-item">
+          <div className="form-item-label">{a18n('用户密码')}</div>
+          <TextField
+            variant="outlined"
+            inputProps={{ inputMode: 'numeric' }}
+            onChange={handlePasswordChange}
+          />
+        </div>
+        <div className="form-item">
+          <Button
+            variant="contained"
+            className="create-class-btn"
+            onClick={login}
+          >
+            {a18n('登录')}
+          </Button>
+        </div>
+        {/*
           <div className="form-item">
             <div className="form-item-label">{a18n('课堂ID')}</div>
             <TextField
@@ -317,14 +415,10 @@ function Home() {
             </Button>
           </div>
         */}
-  
-        </form>
-        <div className="home-empty" />
-      </div>
-    );
-  }
-
-
+      </form>
+      <div className="home-empty" />
+    </div>
+  );
 }
 
 export default Home;
