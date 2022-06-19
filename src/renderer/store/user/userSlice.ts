@@ -7,9 +7,10 @@ export const userSlice = createSlice({
   name: 'user',
   initialState: {
     roomID: '',
-    password:'',
-    isLogin:false,
+    password: '',
+    isLogin: false,
     userID: '',
+    userName: '',
     role: 'teacher',
     isCameraStarted: true,
     isMicStarted: true,
@@ -40,6 +41,7 @@ export const userSlice = createSlice({
         state.password = action.payload.password !== undefined ? action.payload.password : state.password;
         state.isLogin = action.payload.isLogin !== undefined ? action.payload.isLogin : state.isLogin;
         state.userID = action.payload.userID !== undefined ? action.payload.userID : state.userID;
+        state.userName= action.payload.userName !== undefined ? action.payload.userName : state.userName;
         state.role = action.payload.role !== undefined ? action.payload.role : state.role;
         state.isCameraStarted = action.payload.isCameraStarted !== undefined ? action.payload.isCameraStarted : state.isCameraStarted;
         state.isMicStarted = action.payload.isMicStarted !== undefined ? action.payload.isMicStarted : state.isMicStarted;
@@ -69,6 +71,11 @@ export const userSlice = createSlice({
       if (action.payload !== undefined) {
         state.name = action.payload || '';
         state.userID = action.payload || '';
+      }
+    },
+    updateUserName: (state, action) => {
+      if (action.payload !== undefined) {
+        state.userName = action.payload || '';
       }
     },
     updateUserID: (state, action) => {
@@ -164,6 +171,7 @@ export const {
   toggleLogin,
   updateName,
   updateUserID,
+  updateUserName,
   updateRole,
   updateRoomID,
   updatePassword,

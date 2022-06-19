@@ -8,6 +8,9 @@ import Button from '@material-ui/core/Button';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
+import DateFnsUtils from '@date-io/date-fns';
+import { DateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers';
+
 import packageConfig from '../../../../package.json';
 import buildPackageConfig from '../../../../build/app/package.json';
 import ConfirmDialog from '../../components/confirm-dialog';
@@ -17,6 +20,7 @@ import {
   updateRoomID,
   updatePassword,
   updateLoginStatus,
+  updateCcdtUserId,
   updateClassType,
 } from '../../store/user/userSlice';
 import { EUserEventNames } from '../../../constants';
@@ -26,6 +30,7 @@ import {
   qualityCourseUrl,
   loginUrl,
   setLiveStateUrl,
+  addLiveUrl,
   AxiosPost,
   AxiosGet,
 } from '../../utils/urls';
@@ -40,10 +45,10 @@ function CourseItem(props) {
         onPress(roomId);
       }}
     >
-      <ul style={{ 'flex-direction': 'row' }}>
+      <ul style={{ flexDirection: 'row' }}>
         <img src={image} width="50" height="50" />
 
-        <div style={{ 'flex-direction': 'column' }}>
+        <div style={{ flexDirection: 'column' }}>
           <li>课程名称 : {name}</li>
           <li>开课机构 : {organizeName}</li>
         </div>
@@ -69,12 +74,15 @@ function Home() {
   const [courseList, setCourseList] = useState(null);
   const [isClosureDialogVisible, setIsClosureDialogVisible] = useState(false);
   const [className, setClassName] = useState<string>('');
-  const [classStartTimer, setclassStartTimer] = useState<string>('');
+  const [classStartTimer, setclassStartTimer] = useState(new Date());
+
+  const [classEndTimer, setclassEndTimer] = useState(new Date());
 
   const pageSize = 10;
   const currentPage = 1;
   let totalPage = 1;
 
+  let ccdtUserID = -1;
   logger.log(
     `${logPrefix} platform: ${platform}, userID:${userID} roomID:${roomID} classType:${classType}`
   );
@@ -138,11 +146,12 @@ function Home() {
     setClassName(className);
   }
 
-  function handleClassStartTimerChange(
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) {
-    const startTimer = event.target.value as string;
-    setclassStartTimer(startTimer);
+  function handleClassStartTimerChange(newValue: Date | null) {
+    setclassStartTimer(newValue);
+  }
+
+  function handleClassEndTimerChange(newValue: Date | null) {
+    setclassEndTimer(newValue);
   }
 
   async function isRoomExisted() {
@@ -164,33 +173,13 @@ function Home() {
     }
   }
 
-  async function login() {
-    logger.debug('login');
-
-    try {
-      const data = new FormData();
-      data.append('username', userID);
-      data.append('password', md5.hex_md5(`${password}`));
-
-      const res = await AxiosPost(loginUrl, data);
-      if (res.data.state == 0) {
-        // dispatch(updateLoginStatus(true));
-        setLogin(true);
-        updateCourseList();
-        Toast.info('登录成功');
-      } else throw new Error(res.data.message);
-    } catch (error) {
-      logger.error('login error :', error);
-      Toast.error('登录错误');
-    }
-  }
-
   async function updateCourseList() {
+    logger.debug('ccdtUserID : ', ccdtUserID);
     try {
       let data = {
         organizeId: 1,
         siteId: 2,
-        userId: -1,
+        userId: ccdtUserID,
         deviceType: null,
         deviceId: null,
         pageNo: currentPage,
@@ -209,9 +198,36 @@ function Home() {
         data: { pages, list = [] },
       } = res;
       totalPage = pages;
+      // const list2 = [...list, ...list, ...list, ...list, ...list, ...list];
+      // list = list.concat(list2);
       setCourseList(list);
     } catch (error) {
       logger.debug('updateCourseList error : ', error);
+    }
+  }
+
+  async function login() {
+    logger.debug('login');
+
+    try {
+      const data = new FormData();
+      data.append('username', userID);
+      data.append('password', md5.hex_md5(`${password}`));
+
+      const res = await AxiosPost(loginUrl, data);
+      if (res.data.state == 0) {
+        // dispatch(updateLoginStatus(true));
+        const { id } = res.data.user;
+        ccdtUserID = id;
+
+        setLogin(true);
+
+        updateCourseList();
+        Toast.info('登录成功');
+      } else throw new Error(res.data.message);
+    } catch (error) {
+      logger.error('login error :', error);
+      Toast.error('登录错误');
     }
   }
 
@@ -280,8 +296,38 @@ function Home() {
     setIsClosureDialogVisible(false);
   }
 
-  function onConfirmWindowClosure() {
-    setIsClosureDialogVisible(false);
+  async function onConfirmWindowClosure() {
+    if (!className || className.length === 0) {
+      Toast.error('请输入课堂名称');
+      return;
+    }
+
+    if (classStartTimer > classEndTimer) {
+      Toast.error('课堂结束时间需要晚于开始时间，请确认');
+      return;
+    }
+
+    // 更新后台数据
+    try {
+      const data = new FormData();
+      data.append('organizeId', 1);
+      data.append('siteId', 2);
+      data.append('columnCode', 'c02lm0zxzb');
+      data.append('userId', ccdtUserID);
+      data.append('name', className);
+      data.append('startTime', classStartTimer.toDateString());
+      data.append('endTime', classEndTimer.toDateString());
+
+      await AxiosPost(addLiveUrl, data);
+
+      setIsClosureDialogVisible(false);
+
+      updateCourseList();
+    } catch (error) {
+      logger.error('setLiveStateUrl error :', error);
+      Toast.error('课堂创建失败');
+    }
+    // end
   }
 
   if (isLogin) {
@@ -305,23 +351,33 @@ function Home() {
             </Button>
           </div>
 
-          {courseList
-            ? courseList.map((item, index) => {
-                const image = item.hlogo ? item.hlogo : '';
-                const name = item.liveName;
-                const { organizeName } = item.performer.organize;
-                const roomId = item.id;
-                return (
-                  <CourseItem
-                    image={image}
-                    name={name}
-                    organizeName={organizeName}
-                    roomId={roomId}
-                    onPress={enterClass2}
-                  />
-                );
-              })
-            : null}
+          <div
+            style={{
+              overflow: 'hidden',
+              height: '100%',
+            }}
+          >
+            <div style={{ overflow: 'auto', height: '100%' }}>
+              {courseList
+                ? courseList.map((item, index) => {
+                    const image = item.hlogo ? item.hlogo : '';
+                    const name = item.liveName;
+                    const { organizeName } = item.performer.organize;
+                    const roomId = item.id;
+                    return (
+                      <CourseItem
+                        key={index}
+                        image={image}
+                        name={name}
+                        organizeName={organizeName}
+                        roomId={roomId}
+                        onPress={enterClass2}
+                      />
+                    );
+                  })
+                : null}
+            </div>
+          </div>
         </div>
 
         <ConfirmDialog
@@ -340,33 +396,44 @@ function Home() {
             >
               <div className="form-item-label">{a18n('课堂名称')}</div>
               <TextField
+                style={{ marginLeft: 10 }}
                 size="small"
                 variant="outlined"
                 value={className}
                 onChange={handleClassNameChange}
               />
             </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyItems: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <div className="form-item-label">{a18n('上课时间')}</div>
-              <TextField
-                size="small"
-                variant="outlined"
-                value={classStartTimer}
-                onChange={handleClassStartTimerChange}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                <DateTimePicker
+                  format="MMMM do HH:mm"
+                  value={classStartTimer}
+                  disablePast
+                  onChange={handleClassStartTimerChange}
+                  label="开始时间"
+                  okLabel="确定"
+                  cancelLabel="取消"
+                  todayLabel="今天"
+                />
+                <DateTimePicker
+                  style={{ marginTop: 10 }}
+                  format="MMMM do HH:mm"
+                  value={classEndTimer}
+                  disablePast
+                  onChange={handleClassEndTimerChange}
+                  label="结束时间"
+                  okLabel="确定"
+                  cancelLabel="取消"
+                  todayLabel="今天"
+                />
+              </MuiPickersUtilsProvider>
             </div>
           </div>
         </ConfirmDialog>
       </div>
     );
   }
+
   return (
     <div className="trtc-edu-home">
       <form className="trtc-edu-home-form" noValidate autoComplete="off">
@@ -386,6 +453,7 @@ function Home() {
             onChange={handlePasswordChange}
           />
         </div>
+
         <div className="form-item">
           <Button
             variant="contained"
