@@ -8,6 +8,7 @@ import Button from '@material-ui/core/Button';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
+import zhCNLocale from 'date-fns/locale/zh-CN';
 import DateFnsUtils from '@date-io/date-fns';
 import { DateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers';
 
@@ -412,7 +413,7 @@ function Home() {
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <MuiPickersUtilsProvider utils={DateFnsUtils}>
+              <MuiPickersUtilsProvider utils={DateFnsUtils} locale={zhCNLocale}>
                 <DateTimePicker
                   format="MMMM do HH:mm"
                   value={classStartTimer}
