@@ -78,13 +78,13 @@ function Home() {
 
   const [classEndTimer, setclassEndTimer] = useState(new Date());
 
+  const [ccdtUserID, setCcdtUserID] = useState(-1);
   const pageSize = 10;
   const currentPage = 1;
   let totalPage = 1;
 
-  let ccdtUserID = -1;
   logger.log(
-    `${logPrefix} platform: ${platform}, userID:${userID} roomID:${roomID} classType:${classType}`
+    `${logPrefix} platform: ${platform}, userID:${userID} roomID:${roomID} classType:${classType} ccdtUserID:${ccdtUserID}`
   );
   const dispatch = useDispatch();
 
@@ -218,8 +218,8 @@ function Home() {
       if (res.data.state == 0) {
         // dispatch(updateLoginStatus(true));
         const { id } = res.data.user;
-        ccdtUserID = id;
 
+        setCcdtUserID(id);
         setLogin(true);
 
         updateCourseList();
@@ -309,14 +309,22 @@ function Home() {
 
     // 更新后台数据
     try {
+      const dateFns = new DateFnsUtils();
       const data = new FormData();
       data.append('organizeId', 1);
       data.append('siteId', 2);
       data.append('columnCode', 'c02lm0zxzb');
       data.append('userId', ccdtUserID);
       data.append('name', className);
-      data.append('startTime', classStartTimer.toDateString());
-      data.append('endTime', classEndTimer.toDateString());
+      //
+      data.append(
+        'startTime',
+        dateFns.format(classStartTimer, 'yyyy-MM-dd HH:mm:ss')
+      );
+      data.append(
+        'endTime',
+        dateFns.format(classEndTimer, 'yyyy-MM-dd HH:mm:ss')
+      );
 
       await AxiosPost(addLiveUrl, data);
 
