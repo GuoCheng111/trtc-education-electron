@@ -29,6 +29,7 @@ import logger from '../../utils/logger';
 import homeUtil from './util';
 import {
   qualityCourseUrl,
+  teacherDetailUrl,
   loginUrl,
   setLiveStateUrl,
   addLiveUrl,
@@ -39,7 +40,8 @@ import md5 from '../../utils/md5';
 import './index.scss';
 
 function CourseItem(props) {
-  const { image, name, organizeName, roomId, onPress } = props;
+  const { image, name, organizeName, roomId, endTime, startTime, onPress } =
+    props;
   return (
     <div
       onClick={() => {
@@ -47,11 +49,13 @@ function CourseItem(props) {
       }}
     >
       <ul style={{ flexDirection: 'row' }}>
-        <img src={image} width="50" height="50" />
+        <img src={image} width="120" height="67" />
 
         <div style={{ flexDirection: 'column' }}>
           <li>课程名称 : {name}</li>
           <li>开课机构 : {organizeName}</li>
+          <li>开课时间 : {startTime}</li>
+          <li>结束时间 : {endTime}</li>
         </div>
       </ul>
       <hr />
@@ -116,6 +120,10 @@ function Home() {
     }
   }, [dispatch, roomID]);
 
+  useEffect(() => {
+    updateCourseList();
+  }, [ccdtUserID, setCcdtUserID]);
+
   function handleRoomIDChange(event: React.ChangeEvent<HTMLInputElement>) {
     const newRoomID = +event.target.value;
     if (isNaN(newRoomID)) {
@@ -175,7 +183,7 @@ function Home() {
   }
 
   async function updateCourseList() {
-    logger.debug('ccdtUserID : ', ccdtUserID);
+    logger.debug(' ccdtUserID : ', ccdtUserID);
     try {
       let data = {
         organizeId: 1,
@@ -185,6 +193,7 @@ function Home() {
         deviceId: null,
         pageNo: currentPage,
         pageSize,
+        platform: 'tpc',
         columnCode: 'c02lm0zxzb',
       };
 
@@ -214,6 +223,7 @@ function Home() {
       const data = new FormData();
       data.append('username', userID);
       data.append('password', md5.hex_md5(`${password}`));
+      data.append('platform', 'tpc');
 
       const res = await AxiosPost(loginUrl, data);
       if (res.data.state == 0) {
@@ -223,12 +233,11 @@ function Home() {
         setCcdtUserID(id);
         setLogin(true);
 
-        updateCourseList();
         Toast.info('登录成功');
       } else throw new Error(res.data.message);
     } catch (error) {
       logger.error('login error :', error);
-      Toast.error('登录错误');
+      Toast.error(`登录错误 ! ${error.message}`);
     }
   }
 
@@ -288,7 +297,38 @@ function Home() {
     logger.log(`${logPrefix}enterClass response from Main:`, response);
   }
 
-  function enterClass2(id) {
+  async function enterClass2(id) {
+    // 查询课堂状态
+    let data = {
+      organizeId: 1,
+      siteId: 2,
+      userId: ccdtUserID,
+      programType: 3,
+      programId: id,
+    };
+    data = {
+      params: {
+        ...data,
+      },
+    };
+    try {
+      const res = await AxiosGet(teacherDetailUrl, data);
+      const {
+        data: { liveFlag = 0 },
+      } = res;
+
+      logger.debug('liveFlag : ', liveFlag);
+      // 状态 0,未开始，1开始，2结束
+
+      if (liveFlag == 2) {
+        Toast.info('该课程已经结束');
+        return;
+      }
+    } catch (error) {
+      Toast.error('获取课程状态错误');
+      return;
+    }
+
     dispatch(updateRoomID(id));
     logger.debug('createClass ! roomID : ', roomID);
   }
@@ -369,15 +409,16 @@ function Home() {
             <div style={{ overflow: 'auto', height: '100%' }}>
               {courseList
                 ? courseList.map((item, index) => {
-                    const image = item.hlogo ? item.hlogo : '';
-                    const name = item.liveName;
+                    const { hlogo, liveName, endTime, startTime } = item;
                     const { organizeName } = item.performer.organize;
                     const roomId = item.id;
                     return (
                       <CourseItem
                         key={index}
-                        image={image}
-                        name={name}
+                        image={hlogo}
+                        name={liveName}
+                        startTime={startTime}
+                        endTime={endTime}
                         organizeName={organizeName}
                         roomId={roomId}
                         onPress={enterClass2}
